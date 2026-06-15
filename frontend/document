@@ -1,0 +1,8 @@
+Hướng dẫn chạy dự án 
+1.Chạy backend
+    cd D:\DoAn_ITS_React\backend
+    .\venv\Scripts\activate
+    uvicorn main:app --reload
+2.Chạy frontend
+    cd D:\DoAn_ITS_React\frontend
+    npm run dev
