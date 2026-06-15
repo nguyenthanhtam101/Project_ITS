@@ -19,7 +19,7 @@ const TomtomTab = () => {
   const fetchTraffic = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const res = await axios.get('http://localhost:8000/api/tomtom');
+      const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/tomtom');
       if (res.data && res.data.length > 0) {
         setTrafficData(res.data);
         

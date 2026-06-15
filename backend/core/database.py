@@ -6,17 +6,18 @@ import hashlib
 # ==========================================
 # 1. CẤU HÌNH KẾT NỐI POSTGRESQL TRÊN DOCKER
 # ==========================================
-DB_USER = "admin_its"      # Tên user trong Docker
-DB_PASS = "SecretPassword123"        # Mật khẩu trong Docker
-DB_HOST = "localhost"     # Chạy trên máy cá nhân
-DB_PORT = "5432"          # Cổng Docker đã map ra ngoài
-DB_NAME = "its_hcm_db"       # Tên Database trong Docker
+# DB_USER = "admin_its"      # Tên user trong Docker
+# DB_PASS = "SecretPassword123"        # Mật khẩu trong Docker
+# DB_HOST = "localhost"     # Chạy trên máy cá nhân
+# DB_PORT = "5432"          # Cổng Docker đã map ra ngoài
+# DB_NAME = "its_hcm_db"       # Tên Database trong Docker
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = "postgresql://postgres:ThanhTamITS2026@db.sytvneuehabkuodbxvto.supabase.co:5432/postgres"
 
 try:
     engine = create_engine(DATABASE_URL)
-    print("✅ Đã kết nối thành công tới Database PostgreSQL trên Docker!")
+    print("Đã kết nối thành công tới Database PostgreSQL trên Supabase Cloud!")
     
     # ---------------------------------------------------------
     # GIAO DỊCH 1: Tạo các bảng cơ sở (Khối này an toàn 100%)
