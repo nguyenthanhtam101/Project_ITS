@@ -15,7 +15,6 @@ const MonitorTab = () => {
   const [sourceType, setSourceType] = useState('offline');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   
-  // ĐÃ FIX 1: Thêm State chứa danh sách CCTV từ Database
   const [cctvList, setCctvList] = useState([]);
   const [cctvLocation, setCctvLocation] = useState('');
 
@@ -27,10 +26,14 @@ const MonitorTab = () => {
   const [weather, setWeather] = useState({ temp: '--', wind: '--', humidity: '--', rain: '--' });
   const [kpiStats, setKpiStats] = useState({ total: '--', violations: '--' });
   
+  // ĐÃ FIX 1: Dùng state để lưu tọa độ thay vì fix cứng, mặc định là TP.HCM
+  const [currentCamPos, setCurrentCamPos] = useState([10.8033, 106.6845]);
+
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=10.8033&longitude=106.6845&current=temperature_2m,relative_humidity_2m,wind_speed_10m&hourly=precipitation_probability&timezone=Asia/Bangkok&forecast_days=1`;
+        // Cập nhật thời tiết động theo tọa độ của bản đồ
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentCamPos[0]}&longitude=${currentCamPos[1]}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&hourly=precipitation_probability&timezone=Asia/Bangkok&forecast_days=1`;
         const res = await axios.get(url);
         const data = res.data;
         const currentHour = new Date().getHours();
@@ -45,9 +48,8 @@ const MonitorTab = () => {
       }
     };
     fetchWeather();
-  }, []);
+  }, [currentCamPos]); // Load lại thời tiết khi đổi tọa độ camera
 
-  // ĐÃ FIX 2: Gọi API lấy danh sách Camera từ Database khi mở web
   useEffect(() => {
     const fetchCCTV = async () => {
       try {
@@ -64,6 +66,16 @@ const MonitorTab = () => {
     };
     fetchCCTV();
   }, []);
+
+  // ĐÃ FIX 2: Tự động cập nhật tọa độ bản đồ khi người dùng chọn Camera từ Dropdown
+  useEffect(() => {
+    if (sourceType === 'opencctv' && cctvLocation) {
+      const selectedCam = cctvList.find(c => c.name === cctvLocation);
+      if (selectedCam && selectedCam.lat && selectedCam.lon) {
+        setCurrentCamPos([parseFloat(selectedCam.lat), parseFloat(selectedCam.lon)]);
+      }
+    }
+  }, [cctvLocation, sourceType, cctvList]);
 
   useEffect(() => {
     let interval;
@@ -115,7 +127,6 @@ const MonitorTab = () => {
       return;
     }
     
-    // ĐÃ FIX: Chặn người dùng nếu chưa chọn nút chức năng
     if (!activeRoiType) {
       alert("👉 Vui lòng chọn một chức năng (Đo Tốc Độ, Vượt Đèn Đỏ...) ở menu bên trái trước khi bắt đầu vẽ!");
       return;
@@ -136,13 +147,13 @@ const MonitorTab = () => {
 
   const handleContextMenu = (e) => {
     e.preventDefault();
-    if (!activeRoiType) return; // ĐÃ FIX: Thoát nếu chưa chọn vùng
+    if (!activeRoiType) return;
     setRois(prev => ({ ...prev, [activeRoiType]: prev[activeRoiType].slice(0, -1) }));
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!activeRoiType) return; // ĐÃ FIX: Tắt phím tắt nếu chưa chọn chức năng
+      if (!activeRoiType) return; 
 
       if (e.key === 'c' || e.key === 'C') {
         const newRois = { ...rois, [activeRoiType]: [] };
@@ -247,7 +258,6 @@ const MonitorTab = () => {
            resData = response.data;
         }
       } 
-      // ĐÃ FIX 3: Thêm lệnh bắt lấy Tên Camera gửi xuống Backend
       else if (sourceType === 'opencctv' && cctvLocation) {
         formData.append('camera_name', cctvLocation);
         const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-cctv', formData, {
@@ -265,7 +275,8 @@ const MonitorTab = () => {
 
       if (resData && resData.video_id) {
         setCurrentVideoId(resData.video_id);
-        setStreamUrl(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/stream-video/${resData.video_id}`);
+        // ĐÃ FIX 3: Gắn timestamp vào đuôi URL để chặn trình duyệt Chrome lưu cache làm đen màn hình
+        setStreamUrl(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/stream-video/${resData.video_id}?t=${new Date().getTime()}`);
       }
     } catch (error) {
       alert("❌ Không thể kết nối tới Backend!");
@@ -283,11 +294,6 @@ const MonitorTab = () => {
     window.stop(); 
   };
 
-  const currentCamPos = [10.8033, 106.6845];
-  const nearbyCams = [
-    { id: 1, name: "Ngã tư CMT8 - Nguyễn Đình Chiểu", pos: [10.7750, 106.6870] },
-    { id: 2, name: "Vòng xoay Phù Đổng", pos: [10.7690, 106.6920] }
-  ];
   const nearbyAreas = [
     { id: 1, name: "Quang Trung - Số 625" },
     { id: 2, name: "Trần Quang Khải - Trần Khắc Chân" },
@@ -324,7 +330,6 @@ const MonitorTab = () => {
                 <input type="text" placeholder="Dán link YouTube..." value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} className="w-full bg-[#0A0D10] text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 mb-3" />
               </div>
             )}
-            {/* ĐÃ FIX 4: Thay Dropdown cứng bằng Dropdown nạp từ Database */}
             {sourceType === 'opencctv' && (
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Chọn Trạm OpenCCTV:</label>
@@ -456,13 +461,13 @@ const MonitorTab = () => {
 
         <div className="flex flex-col xl:flex-row gap-6">
           <div className="w-full xl:w-2/3 bg-[#11151A] border border-gray-700 rounded-xl p-4 shadow-lg h-[300px] flex flex-col">
-            <h3 className="text-md font-bold text-gray-300 mb-2">📍 Bản Đồ Camera TP.Hồ Chí Minh</h3>
+            <h3 className="text-md font-bold text-gray-300 mb-2">📍 Bản Đồ Camera Giám Sát</h3>
             <div className="flex-1 rounded-lg overflow-hidden border border-gray-800 relative z-0">
-              <MapContainer center={currentCamPos} zoom={13} style={{ height: '100%', width: '100%' }}>
+              {/* ĐÃ FIX 4: Thêm key={currentCamPos} để ép bản đồ tự động dời đến tọa độ mới */}
+              <MapContainer key={`${currentCamPos[0]}-${currentCamPos[1]}`} center={currentCamPos} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png" />
                 <Circle center={currentCamPos} pathOptions={{ color: '#00E5FF', fillColor: '#00E5FF', fillOpacity: 0.3 }} radius={150} />
                 <Marker position={currentCamPos}><Popup>Camera Đang Xem</Popup></Marker>
-                {nearbyCams.map(cam => <Marker key={cam.id} position={cam.pos}><Popup>{cam.name}</Popup></Marker>)}
               </MapContainer>
             </div>
           </div>
@@ -471,7 +476,7 @@ const MonitorTab = () => {
             <h2 className="text-lg font-bold text-gray-300 mb-4 flex items-center"><span className="mr-2">⛅</span> Thời Tiết Thực Tế</h2>
             <div className="bg-[#161B22] border border-gray-800 rounded-xl p-4 flex flex-col items-center">
               <div className="text-5xl font-bold text-[#00E5FF] mb-1">{weather.temp}°C</div>
-              <div className="text-gray-400 mb-6 text-sm">TP. Hồ Chí Minh</div>
+              <div className="text-gray-400 mb-6 text-sm">{sourceType === 'opencctv' ? cctvLocation : 'Khu vực hiện tại'}</div>
               <div className="w-full grid grid-cols-2 gap-y-4 text-xs text-gray-300">
                 <div className="flex items-center gap-2"><span className="text-green-400 text-base">🍃</span> Gió: {weather.wind} km/h</div>
                 <div className="flex items-center gap-2"><span className="text-yellow-400 text-base">⛅</span> Mưa: {weather.rain}%</div>
