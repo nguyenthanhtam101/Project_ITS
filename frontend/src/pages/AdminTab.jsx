@@ -13,7 +13,9 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/table/${tableName}`);
+      const res = await axios.get(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/table/${tableName}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
       if (res.data && res.data.length > 0) {
         setData(res.data);
         setColumns(Object.keys(res.data[0]));
@@ -57,7 +59,9 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await axios.post(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/table/${tableName}/sync`, data);
+      const res = await axios.post(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/table/${tableName}/sync`, data, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
       if (res.data.status === 'success') {
         alert('✅ Đã đồng bộ dữ liệu lên Database PostgreSQL!');
         setHasUnsavedChanges(false); // Đã lưu xong, xóa cảnh báo
@@ -193,7 +197,9 @@ const AdminTab = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/users');
+      const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/users', {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
       setUsers(res.data);
       if (res.data.length > 0) setSelectedUserToDelete(res.data[0].username);
     } catch (e) { console.error(e); }
@@ -203,7 +209,9 @@ const AdminTab = () => {
     if (selectedUserToDelete === 'admin') return alert('⚠️ Không thể xóa tài khoản Super Admin!');
     if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn user: ${selectedUserToDelete}?`)) return;
     try {
-      const res = await axios.delete(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/users/${selectedUserToDelete}`);
+      const res = await axios.delete(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/users/${selectedUserToDelete}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
       if (res.data.status === 'success') {
         alert('✅ Đã xóa tài khoản thành công!');
         fetchUsers();

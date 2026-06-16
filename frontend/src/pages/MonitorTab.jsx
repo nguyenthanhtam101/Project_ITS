@@ -51,7 +51,9 @@ const MonitorTab = () => {
   useEffect(() => {
     const fetchCCTV = async () => {
       try {
-        const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/cctv-list');
+        const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/cctv-list', {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        });
         setCctvList(res.data);
         if (res.data.length > 0) {
           setCctvLocation(res.data[0].name); // Chọn sẵn trạm đầu tiên
@@ -68,7 +70,9 @@ const MonitorTab = () => {
     if (streamUrl && currentVideoId) {
       interval = setInterval(async () => {
         try {
-          const res = await axios.get(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/stats/${currentVideoId}`);
+          const res = await axios.get(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/stats/${currentVideoId}`, {
+            headers: { "ngrok-skip-browser-warning": "true" }
+          });
           if (res.data) {
             setKpiStats({ total: res.data.total, violations: res.data.violations });
           }
@@ -99,7 +103,9 @@ const MonitorTab = () => {
     const formData = new FormData();
     formData.append('settings', JSON.stringify(finalSettings));
     try {
-      await axios.post(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/update-settings/${currentVideoId}`, formData);
+      await axios.post(`https://stealable-ayesha-magnesian.ngrok-free.dev/api/update-settings/${currentVideoId}`, formData, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
     } catch (e) { console.error("Lỗi cập nhật cấu hình live", e); }
   };
 
@@ -225,12 +231,16 @@ const MonitorTab = () => {
       let resData = null;
       if (sourceType === 'offline' && selectedFile) {
         formData.append('file', selectedFile);
-        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-video', formData);
+        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-video', formData, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        });
         resData = response.data;
       } 
       else if (sourceType === 'youtube' && youtubeUrl) {
         formData.append('url', youtubeUrl);
-        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-youtube', formData);
+        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-youtube', formData, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        });
         if(response.data.error) {
            alert("❌ Lỗi lấy luồng YouTube: " + response.data.error);
         } else {
@@ -240,7 +250,9 @@ const MonitorTab = () => {
       // ĐÃ FIX 3: Thêm lệnh bắt lấy Tên Camera gửi xuống Backend
       else if (sourceType === 'opencctv' && cctvLocation) {
         formData.append('camera_name', cctvLocation);
-        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-cctv', formData);
+        const response = await axios.post('https://stealable-ayesha-magnesian.ngrok-free.dev/api/upload-cctv', formData, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        });
         if(response.data.error) {
            alert("❌ Lỗi CCTV: " + response.data.error);
         } else {
