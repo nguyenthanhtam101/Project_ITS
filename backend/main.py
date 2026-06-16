@@ -397,9 +397,15 @@ def sync_table(table_name: str, data: List[Dict[str, Any]]):
     allowed_tables = ['cameras', 'traffic_events', 'tomtom_intersections']
     if table_name not in allowed_tables: return {"status": "error"}
     try:
+        for row in data:
+            for key, val in row.items():
+                # Nếu giá trị là chuỗi rỗng hoặc chỉ có khoảng trắng
+                if isinstance(val, str) and val.strip() == "":
+                    row[key] = None
+
         df = pd.DataFrame(data)
         
-        # BẢO VỆ DATABASE: Xóa dòng bằng TRUNCATE để giữ nguyên thuộc tính tự động nhảy ID (SERIAL) thay vì dùng replace
+        # BẢO VỆ DATABASE: Xóa dòng bằng TRUNCATE để giữ nguyên thuộc tính tự động nhảy ID
         with engine.begin() as conn:
             conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;"))
             
