@@ -123,3 +123,29 @@ def save_event_to_db(vehicle_id, v_class, speed, plate_text, status, camera_name
             })
     except Exception as e:
         print(f"⚠️ Lỗi khi ghi vào Database: {e}")
+
+# ==========================================
+# ĐỒNG BỘ DỮ LIỆU TOMTOM TỪ CONFIG VÀO DATABASE
+# ==========================================
+try:
+    from config import HCM_HOTSPOTS 
+    
+    with engine.begin() as conn:
+        # Kiểm tra xem bảng tomtom đã có dữ liệu chưa
+        count = conn.execute(text("SELECT COUNT(*) FROM tomtom_intersections")).scalar()
+        
+        # Nếu bảng trống (count == 0), tiến hành bơm dữ liệu từ config vào
+        if count == 0:
+            print("⏳ Đang đồng bộ danh sách TomTom từ config.py lên Supabase...")
+            for name, coords in HCM_HOTSPOTS.items():
+                lat, lon = map(float, coords.split(','))
+                conn.execute(text("""
+                    INSERT INTO tomtom_intersections (name, lat, lon) 
+                    VALUES (:name, :lat, :lon)
+                """), {"name": name, "lat": lat, "lon": lon})
+            print("✅ Đã bơm xong 15 nút giao TomTom vào Database!")
+        else:
+            print("✅ Dữ liệu TomTom đã tồn tại trên Supabase, bỏ qua bước đồng bộ.")
+            
+except Exception as e:
+    print(f"⚠️ Bỏ qua đồng bộ TomTom (Lỗi: {e})")
