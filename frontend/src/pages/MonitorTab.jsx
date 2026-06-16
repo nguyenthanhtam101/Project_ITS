@@ -51,12 +51,12 @@ const MonitorTab = () => {
   useEffect(() => {
     const fetchCCTV = async () => {
       try {
-        const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/cctv-list', {
+        const res = await axios.get('https://stealable-ayesha-magnesian.ngrok-free.dev/api/admin/table/cameras', {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
         setCctvList(res.data);
         if (res.data.length > 0) {
-          setCctvLocation(res.data[0].name); // Chọn sẵn trạm đầu tiên
+          setCctvLocation(res.data[0].name); 
         }
       } catch (e) {
         console.error("Lỗi tải danh sách camera:", e);
