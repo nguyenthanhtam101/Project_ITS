@@ -34,7 +34,7 @@ const AuthPage = ({ onLoginSuccess }) => {
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
     
     try {
-      const res = await axios.post(`https://stealable-ayesha-magnesian.ngrok-free.dev${endpoint}`, formData);
+      const res = await axios.post(`https://alert-correct-mph-supervision.trycloudflare.com${endpoint}`, formData);
       if (res.data.status === 'success') {
         if (isLoginMode) {
           onLoginSuccess(res.data.full_name);

@@ -25,8 +25,11 @@ from core.tracker_logic import generate_frames
 app = FastAPI(title="ITS Backend Server")
 
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], 
-    allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=False,  
+    allow_methods=["*"], 
+    allow_headers=["*"],
 )
 
 os.makedirs("temp_videos", exist_ok=True)
