@@ -13,7 +13,7 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`https://alert-correct-mph-supervision.trycloudflare.com/api/admin/table/${tableName}`, {
+      const res = await axios.get(`https://biography-dollars-hydraulic-remind.trycloudflare.com/api/admin/table/${tableName}`, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data && res.data.length > 0) {
@@ -59,7 +59,7 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await axios.post(`https://alert-correct-mph-supervision.trycloudflare.com/api/admin/table/${tableName}/sync`, data, {
+      const res = await axios.post(`https://biography-dollars-hydraulic-remind.trycloudflare.com/api/admin/table/${tableName}/sync`, data, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data.status === 'success') {
@@ -197,7 +197,7 @@ const AdminTab = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('https://alert-correct-mph-supervision.trycloudflare.com/api/admin/users', {
+      const res = await axios.get('https://biography-dollars-hydraulic-remind.trycloudflare.com/api/admin/users', {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       setUsers(res.data);
@@ -209,7 +209,7 @@ const AdminTab = () => {
     if (selectedUserToDelete === 'admin') return alert('⚠️ Không thể xóa tài khoản Super Admin!');
     if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn user: ${selectedUserToDelete}?`)) return;
     try {
-      const res = await axios.delete(`https://alert-correct-mph-supervision.trycloudflare.com/api/admin/users/${selectedUserToDelete}`, {
+      const res = await axios.delete(`https://biography-dollars-hydraulic-remind.trycloudflare.com/api/admin/users/${selectedUserToDelete}`, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data.status === 'success') {

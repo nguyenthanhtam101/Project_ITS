@@ -19,7 +19,7 @@ const TomtomTab = () => {
   const fetchTraffic = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const res = await axios.get('https://alert-correct-mph-supervision.trycloudflare.com/api/tomtom', {
+      const res = await axios.get('https://biography-dollars-hydraulic-remind.trycloudflare.com/api/tomtom', {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data && res.data.length > 0) {
