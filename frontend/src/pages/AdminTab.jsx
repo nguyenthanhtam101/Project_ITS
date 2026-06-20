@@ -20,8 +20,9 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
         setData(res.data);
         setColumns(Object.keys(res.data[0]));
       } else {
+        // Cập nhật cấu trúc dự phòng thêm cột district
         if (tableName === 'cameras') setColumns(['id', 'name', 'country', 'lat', 'lon', 'status', 'stream_url']);
-        else if (tableName === 'tomtom_intersections') setColumns(['name', 'lat', 'lon']);
+        else if (tableName === 'tomtom_intersections') setColumns(['name', 'district', 'lat', 'lon']);
         else if (tableName === 'traffic_events') setColumns(['id', 'timestamp', 'vehicle_type', 'speed', 'plate_text', 'status']);
       }
     } catch (e) { console.error("Lỗi lấy dữ liệu:", e); }
@@ -31,12 +32,11 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
     const newData = [...data];
     newData[rowIndex][colName] = value;
     setData(newData);
-    setHasUnsavedChanges(true); // Ghi nhận có thay đổi
+    setHasUnsavedChanges(true);
   };
 
   const handleAddRow = () => {
     const newRow = {};
-    // Tự động nhảy ID tiếp theo trên giao diện để hiển thị (001, 002...)
     const nextId = data.length > 0 ? Math.max(...data.map(d => Number(d.id) || 0)) + 1 : 1;
     
     columns.forEach(col => {
@@ -45,14 +45,14 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
       else newRow[col] = '';
     });
     setData([...data, newRow]); 
-    setHasUnsavedChanges(true); // Ghi nhận có thay đổi
+    setHasUnsavedChanges(true);
   };
 
   const handleDeleteRow = (index) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa dòng này khỏi Database không?')) {
       const newData = data.filter((_, i) => i !== index);
       setData(newData);
-      setHasUnsavedChanges(true); // Ghi nhận có thay đổi
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -64,7 +64,7 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
       });
       if (res.data.status === 'success') {
         alert('✅ Đã đồng bộ dữ liệu lên Database PostgreSQL!');
-        setHasUnsavedChanges(false); // Đã lưu xong, xóa cảnh báo
+        setHasUnsavedChanges(false);
         fetchData();
       } else alert('❌ Lỗi lưu dữ liệu: ' + res.data.message);
     } catch (e) { alert('❌ Mất kết nối đến server!'); }
@@ -79,7 +79,6 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
           <p className="text-xs text-gray-500">{subtitle}</p>
         </div>
         <div className="flex gap-3">
-          {/* Không cho thêm mới đối với bảng sự kiện giao thông */}
           {tableName !== 'traffic_events' && (
             <button onClick={handleAddRow} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all">
               ➕ THÊM MỚI
@@ -96,12 +95,19 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
           <thead className="text-xs uppercase bg-[#161B22] sticky top-0 border-b border-gray-700">
             <tr>
               <th className="px-4 py-3 w-10 text-center border-r border-gray-700">XÓA</th>
-              {columns.map(col => <th key={col} className="px-4 py-3 border-r border-gray-700">{col}</th>)}
+              {/* Thêm cột STT Cố định */}
+              <th className="px-4 py-3 w-12 text-center border-r border-gray-700 text-[#00E5FF]">STT</th>
+              
+              {columns.map(col => (
+                <th key={col} className="px-4 py-3 border-r border-gray-700">
+                  {col === 'district' ? 'QUẬN' : col.toUpperCase()}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <tr><td colSpan={columns.length + 1} className="text-center py-10 text-gray-500">Bảng đang trống. Bấm "THÊM MỚI" để bắt đầu.</td></tr>
+              <tr><td colSpan={columns.length + 2} className="text-center py-10 text-gray-500">Bảng đang trống. Bấm "THÊM MỚI" để bắt đầu.</td></tr>
             ) : (
               data.map((row, rIdx) => (
                 <tr key={rIdx} className="bg-[#0A0D10] border-b border-gray-800 hover:bg-[#161B22]">
@@ -109,16 +115,17 @@ const EditableTable = ({ tableName, title, subtitle, setHasUnsavedChanges }) => 
                     <button onClick={() => handleDeleteRow(rIdx)} className="text-red-500 hover:bg-red-500 hover:text-white font-bold px-3 py-1 rounded transition-all">✕</button>
                   </td>
                   
+                  {/* Cột dữ liệu STT tự động đếm dòng */}
+                  <td className="px-2 py-2 border-r border-gray-800 text-center font-bold text-gray-500">
+                    {rIdx + 1}
+                  </td>
+                  
                   {columns.map(col => {
-                    // Logic lọc chữ
                     let displayValue = row[col] !== null && row[col] !== undefined ? row[col] : '';
 
-                    // 1. Format ID tự động 001, 002
                     if (col === 'id' && displayValue !== '') {
                       displayValue = String(displayValue).padStart(3, '0');
                     }
-                    
-                    // 2. Format Tốc độ (Nếu không có số, hiện "Không có")
                     if (tableName === 'traffic_events' && col === 'speed') {
                       if (displayValue === '' || Number(displayValue) === 0) displayValue = 'Không có';
                     }
@@ -162,11 +169,8 @@ const AdminTab = () => {
   const [activeTab, setActiveTab] = useState('cameras');
   const [users, setUsers] = useState([]);
   const [selectedUserToDelete, setSelectedUserToDelete] = useState('');
-  
-  // Trạng thái theo dõi thay đổi
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // 1. Popup Cảnh báo khi người dùng tắt trình duyệt / Bấm F5
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (hasUnsavedChanges) {
@@ -182,7 +186,6 @@ const AdminTab = () => {
     if (activeTab === 'users') fetchUsers();
   }, [activeTab]);
 
-  // 2. Popup Cảnh báo khi chuyển Tab
   const handleTabSwitch = (tabId) => {
     if (hasUnsavedChanges) {
         const confirmLeave = window.confirm("⚠️ BẠN CÓ THAO TÁC CHƯA LƯU!\n\nBạn có chắc chắn muốn rời đi và HỦY bỏ toàn bộ các thay đổi vừa nhập không?");
@@ -274,7 +277,6 @@ const AdminTab = () => {
         </div>
       )}
 
-      {/* ĐÃ TRUYỀN HÀM THEO DÕI THAY ĐỔI VÀO COMPONENT */}
       {activeTab === 'cameras' && <EditableTable tableName="cameras" title="Danh Sách Trạm Camera Giao Thông" subtitle="Quản lý Trạng thái, Tọa độ bản đồ và Link của các Camera." setHasUnsavedChanges={setHasUnsavedChanges} />}
       {activeTab === 'events' && <EditableTable tableName="traffic_events" title="Dữ Liệu Sự Kiện Giao Thông" subtitle="Dữ liệu do AI tự động thu thập. Không cho phép tự ý thêm mới." setHasUnsavedChanges={setHasUnsavedChanges} />}
       {activeTab === 'tomtom' && <EditableTable tableName="tomtom_intersections" title="Danh Sách Nút Giao Giám Sát" subtitle="Nhập tọa độ (Vĩ độ - lat, Kinh độ - lon) để hệ thống tự động gọi API TomTom." setHasUnsavedChanges={setHasUnsavedChanges} />}

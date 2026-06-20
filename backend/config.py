@@ -28,20 +28,20 @@ COLOR_MAP = {'motorcycle': (255, 0, 0), 'bus': (0, 255, 255), 'car': (0, 255, 0)
 
 # CẤU HÌNH TOMTOM API
 TOMTOM_API_KEY = "1Wa4kgOJxHIrECvCEjAPE82U6bDDT864" 
-HCM_HOTSPOTS = {
-    "Hầm Thủ Thiêm (Q1)": "10.7716,106.7133",
-    "Ngã 6 Phù Đổng (Q1)": "10.7714,106.6923",
-    "Vòng xoay Điện Biên Phủ (Q1)": "10.7915,106.7011",
-    "Ngã Tư Hàng Xanh (Bình Thạnh)": "10.8015,106.7111",
-    "Cầu Sài Gòn (Bình Thạnh)": "10.7984,106.7233",
-    "Ngã Tư Phú Nhuận (Phú Nhuận)": "10.7981,106.6775",
-    "Vòng Xoay Lăng Cha Cả (Tân Bình)": "10.7986,106.6575",
-    "Ngã Tư Bảy Hiền (Tân Bình)": "10.7932,106.6527",
-    "Vòng xoay Phạm Văn Đồng (Gò Vấp)": "10.8202,106.6874",
-    "Vòng Xoay Dân Chủ (Q3)": "10.7935,106.6806",
-    "Ngã 7 Lý Thái Tổ (Q10)": "10.7672,106.6745",
-    "Cầu Vượt 3/2 (Q10)": "10.7735,106.6722",
-    "Cầu Kênh Tẻ (Q4)": "10.7548,106.6975",
-    "Ngã tư Nguyễn Văn Linh (Q7)": "10.7339,106.7032",
-    "Ngã tư An Sương (Q12)": "10.8333,106.6136"
-}
+TOMTOM_HOTSPOTS = [
+    {"name": "Hầm Thủ Thiêm (Q1)", "lat": 10.7716, "lon": 106.7133, "district": "Quận 1"},
+    {"name": "Ngã 6 Phù Đổng (Q1)", "lat": 10.7714, "lon": 106.6923, "district": "Quận 1"},
+    {"name": "Vòng xoay Điện Biên Phủ (Q1)", "lat": 10.7915, "lon": 106.7011, "district": "Quận 1"},
+    {"name": "Ngã Tư Hàng Xanh (Bình Thạnh)", "lat": 10.8015, "lon": 106.7111, "district": "Bình Thạnh"},
+    {"name": "Cầu Sài Gòn (Bình Thạnh)", "lat": 10.7984, "lon": 106.7233, "district": "Bình Thạnh"},
+    {"name": "Ngã Tư Phú Nhuận (Phú Nhuận)", "lat": 10.7981, "lon": 106.6775, "district": "Phú Nhuận"},
+    {"name": "Vòng Xoay Lăng Cha Cả (Tân Bình)", "lat": 10.7986, "lon": 106.6575, "district": "Tân Bình"},
+    {"name": "Ngã Tư Bảy Hiền (Tân Bình)", "lat": 10.7932, "lon": 106.6527, "district": "Tân Bình"},
+    {"name": "Vòng xoay Phạm Văn Đồng (Gò Vấp)", "lat": 10.8202, "lon": 106.6874, "district": "Gò Vấp"},
+    {"name": "Vòng Xoay Dân Chủ (Q3)", "lat": 10.7935, "lon": 106.6806, "district": "Quận 3"},
+    {"name": "Ngã 7 Lý Thái Tổ (Q10)", "lat": 10.7672, "lon": 106.6745, "district": "Quận 10"},
+    {"name": "Cầu Vượt 3/2 (Q10)", "lat": 10.7735, "lon": 106.6722, "district": "Quận 10"},
+    {"name": "Cầu Kênh Tẻ (Q4)", "lat": 10.7548, "lon": 106.6975, "district": "Quận 4"},
+    {"name": "Ngã tư Nguyễn Văn Linh (Q7)", "lat": 10.7339, "lon": 106.7032, "district": "Quận 7"},
+    {"name": "Ngã tư An Sương (Q12)", "lat": 10.8333, "lon": 106.6136, "district": "Quận 12"}
+]

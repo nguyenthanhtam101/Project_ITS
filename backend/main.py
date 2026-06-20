@@ -18,7 +18,7 @@ from typing import List, Dict, Any
 import numpy as np
 from sqlalchemy import text
 from core.database import engine
-from config import TOMTOM_API_KEY, HCM_HOTSPOTS
+from config import TOMTOM_API_KEY, TOMTOM_HOTSPOTS
 from core.ai_engine import load_models
 from core.tracker_logic import generate_frames
 
@@ -195,7 +195,7 @@ def update_tomtom_data():
     global TOMTOM_CACHE
     while True:
         data_records = []
-        for name, coords in HCM_HOTSPOTS.items():
+        for name, coords in TOMTOM_HOTSPOTS.items():
             url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={coords}"
             try:
                 res = requests.get(url, timeout=5)
