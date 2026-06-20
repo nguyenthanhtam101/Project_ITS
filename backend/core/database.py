@@ -128,7 +128,7 @@ def save_event_to_db(vehicle_id, v_class, speed, plate_text, status, camera_name
 # ĐỒNG BỘ DỮ LIỆU TOMTOM TỪ CONFIG VÀO DATABASE
 # ==========================================
 try:
-    from config import HCM_HOTSPOTS 
+    from config import TOMTOM_HOTSPOTS 
     
     with engine.begin() as conn:
         # Kiểm tra xem bảng tomtom đã có dữ liệu chưa
@@ -137,7 +137,7 @@ try:
         # Nếu bảng trống (count == 0), tiến hành bơm dữ liệu từ config vào
         if count == 0:
             print("⏳ Đang đồng bộ danh sách TomTom từ config.py lên Supabase...")
-            for name, coords in HCM_HOTSPOTS.items():
+            for name, coords in TOMTOM_HOTSPOTS.items():
                 lat, lon = map(float, coords.split(','))
                 conn.execute(text("""
                     INSERT INTO tomtom_intersections (name, lat, lon) 

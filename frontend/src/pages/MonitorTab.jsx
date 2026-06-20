@@ -91,7 +91,7 @@ const MonitorTab = () => {
         } catch (e) {
           console.error("Lỗi lấy thống kê KPI:", e);
         }
-      }, 1000);
+      }, 180000);
     } else {
       setKpiStats({ total: '--', violations: '--' });
     }

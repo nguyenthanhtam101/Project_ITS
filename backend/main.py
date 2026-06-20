@@ -86,7 +86,6 @@ def get_cctv_list():
     if engine is None: return []
     try:
         with engine.connect() as conn:
-            # ĐÃ SỬA: Dùng SELECT * để lấy cả lat, lon, status, country
             df = pd.read_sql("SELECT * FROM cameras WHERE stream_url IS NOT NULL", conn)
         return df.to_dict('records')
     except Exception as e:
@@ -188,15 +187,22 @@ def login_user(user: UserAuth):
         return {"status": "error", "message": str(e)}
 
 # ==============================================================
-# LOGIC TOMTOM LIVE MAP 
+# LOGIC TOMTOM LIVE MAP (ĐÃ ĐƯỢC TỐI ƯU HÓA RATE LIMIT)
 # ==============================================================
 
 def update_tomtom_data():
     global TOMTOM_CACHE
     while True:
         data_records = []
-        for name, coords in TOMTOM_HOTSPOTS.items():
-            url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={coords}"
+        # Đã cập nhật để duyệt qua cấu trúc List chứa Dictionary mới
+        for hotspot in TOMTOM_HOTSPOTS:
+            node_name = hotspot.get("name", "Unknown Node")
+            lat = hotspot.get("lat")
+            lon = hotspot.get("lon")
+            district = hotspot.get("district", "Unknown District")
+            
+            url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={lat},{lon}"
+            
             try:
                 res = requests.get(url, timeout=5)
                 if res.status_code == 200:
@@ -210,21 +216,25 @@ def update_tomtom_data():
                     elif cong_pct > 30: status = "Ùn Ứ"
                     else: status = "Thông Thoáng"
                     
-                    district = name.split('(')[-1].replace(')', '').strip()
-                    node_name = name.split('(')[0].strip()
-                    lat, lon = map(float, coords.split(','))
-                    
                     data_records.append({
-                        "district": district, "node_name": node_name,
+                        "district": district, 
+                        "node_name": node_name,
                         "lat": lat, "lon": lon,
                         "curr_speed": curr_speed, "free_speed": free_speed,
                         "cong_pct": cong_pct, "status": status
                     })
-            except Exception: pass
+                else:
+                    print(f"⚠️ TomTom API Cảnh báo ({res.status_code}) tại {node_name}: {res.text}")
+            except Exception as e: 
+                print(f"❌ Lỗi mạng khi gọi TomTom API tại {node_name}: {str(e)}")
+            
+            # CHỐNG LỖI VƯỢT QPS (Rate Limiting) - Chờ 0.5s giữa các trạm
             time.sleep(0.5) 
         
         if data_records: TOMTOM_CACHE = data_records
-        time.sleep(30) 
+        
+        # BẢO VỆ QUOTA NGÀY: 1 phút quét 1 lần (Đủ để demo mượt mà)
+        time.sleep(60) 
 
 threading.Thread(target=update_tomtom_data, daemon=True).start()
 
@@ -379,7 +389,6 @@ def get_table(table_name: str):
     allowed_tables = ['cameras', 'traffic_events', 'tomtom_intersections']
     if table_name not in allowed_tables: return []
     try:
-        # Sửa lỗi ORDER BY id cho bảng không có id
         order_clause = "ORDER BY timestamp DESC LIMIT 500" if table_name == 'traffic_events' else "ORDER BY id ASC" if table_name == 'cameras' else ""
         with engine.connect() as conn:
             df = pd.read_sql(f"SELECT * FROM {table_name} {order_clause}", conn)
@@ -387,8 +396,6 @@ def get_table(table_name: str):
         if 'timestamp' in df.columns:
             df['timestamp'] = df['timestamp'].astype(str)
             
-        # Fix dứt điểm lỗi màn hình rỗng NaN của JSON
-        import numpy as np
         df = df.replace([np.nan, np.inf, -np.inf], "")
         
         return df.to_dict('records')
@@ -402,17 +409,14 @@ def sync_table(table_name: str, data: List[Dict[str, Any]]):
     try:
         for row in data:
             for key, val in row.items():
-                # Nếu giá trị là chuỗi rỗng hoặc chỉ có khoảng trắng
                 if isinstance(val, str) and val.strip() == "":
                     row[key] = None
 
         df = pd.DataFrame(data)
         
-        # BẢO VỆ DATABASE: Xóa dòng bằng TRUNCATE để giữ nguyên thuộc tính tự động nhảy ID
         with engine.begin() as conn:
             conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;"))
             
-        # Đẩy dữ liệu vào lại bảng
         if not df.empty:
             df.to_sql(table_name, engine, if_exists="append", index=False)
             
