@@ -187,15 +187,25 @@ def login_user(user: UserAuth):
         return {"status": "error", "message": str(e)}
 
 # ==============================================================
-# LOGIC TOMTOM LIVE MAP (ĐÃ ĐƯỢC TỐI ƯU HÓA RATE LIMIT)
+# LOGIC TOMTOM LIVE MAP (ĐÃ ĐỒNG BỘ HOÀN TOÀN VỚI DATABASE)
 # ==============================================================
 
 def update_tomtom_data():
     global TOMTOM_CACHE
     while True:
         data_records = []
-        # Đã cập nhật để duyệt qua cấu trúc List chứa Dictionary mới
-        for hotspot in TOMTOM_HOTSPOTS:
+        hotspots_list = []
+        
+        # 1. ĐỌC DỮ LIỆU ĐỘNG TRỰC TIẾP TỪ DATABASE (Thay vì dùng config.py)
+        try:
+            with engine.connect() as conn:
+                df = pd.read_sql("SELECT name, district, lat, lon FROM tomtom_intersections", conn)
+                hotspots_list = df.to_dict('records')
+        except Exception as e:
+            print(f"⚠️ Lỗi đọc Database nút giao TomTom: {e}")
+            
+        # 2. TIẾN HÀNH QUÉT API CHO CÁC NÚT GIAO VỪA LẤY ĐƯỢC
+        for hotspot in hotspots_list:
             node_name = hotspot.get("name", "Unknown Node")
             lat = hotspot.get("lat")
             lon = hotspot.get("lon")
@@ -209,6 +219,10 @@ def update_tomtom_data():
                     flow = res.json().get('flowSegmentData', {})
                     curr_speed = flow.get('currentSpeed', 0)
                     free_speed = flow.get('freeFlowSpeed', 1)
+                    
+                    # Tránh lỗi chia cho 0 nếu API lỗi
+                    if free_speed == 0: free_speed = 1 
+                    
                     cong_pct = round((1 - (curr_speed / free_speed)) * 100, 1)
                     cong_pct = max(0, min(100, cong_pct))
                     
@@ -223,19 +237,19 @@ def update_tomtom_data():
                         "curr_speed": curr_speed, "free_speed": free_speed,
                         "cong_pct": cong_pct, "status": status
                     })
-                else:
-                    print(f"⚠️ TomTom API Cảnh báo ({res.status_code}) tại {node_name}: {res.text}")
-            except Exception as e: 
-                print(f"❌ Lỗi mạng khi gọi TomTom API tại {node_name}: {str(e)}")
+            except Exception: 
+                pass # Bỏ qua lỗi mạng chập chờn để không làm gián đoạn vòng lặp
             
             # CHỐNG LỖI VƯỢT QPS (Rate Limiting) - Chờ 0.5s giữa các trạm
             time.sleep(0.5) 
         
+        # Cập nhật Cache cho Frontend gọi
         if data_records: TOMTOM_CACHE = data_records
         
-        # BẢO VỆ QUOTA NGÀY: 1 phút quét 1 lần (Đủ để demo mượt mà)
+        # Quét 1 phút 1 lần
         time.sleep(60) 
 
+# (Đoạn này giữ nguyên)
 threading.Thread(target=update_tomtom_data, daemon=True).start()
 
 @app.get("/api/tomtom")
