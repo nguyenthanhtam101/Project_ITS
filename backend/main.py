@@ -18,7 +18,7 @@ from typing import List, Dict, Any
 import numpy as np
 from sqlalchemy import text
 from core.database import engine
-from config import TOMTOM_API_KEY, TOMTOM_HOTSPOTS
+from config import TOMTOM_API_KEY, TOMTOM_HOTSPOTS,GEMINI_API_KEY
 from core.ai_engine import load_models
 from core.tracker_logic import generate_frames
 

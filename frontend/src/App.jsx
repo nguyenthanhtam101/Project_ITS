@@ -35,7 +35,7 @@ const AuthPage = ({ onLoginSuccess }) => {
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
     
     try {
-      const res = await axios.post(`https://lean-capacity-aruba-forbes.trycloudflare.com${endpoint}`, formData);
+      const res = await axios.post(`https://freeware-june-til-reservoir.trycloudflare.com${endpoint}`, formData);
       if (res.data.status === 'success') {
         if (isLoginMode) {
           onLoginSuccess(res.data.full_name);
