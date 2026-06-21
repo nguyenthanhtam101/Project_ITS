@@ -4,7 +4,8 @@ import axios from 'axios';
 import MonitorTab from './pages/MonitorTab'; 
 import TomtomTab from './pages/TomtomTab'; 
 import AnalyticsTab from './pages/AnalyticsTab';
-import AdminTab from './pages/AdminTab'; // BỔ SUNG 1: Import trang Admin
+import AdminTab from './pages/AdminTab'; 
+import ChatbotWidget from './pages/ChatbotTab';
 import L from 'leaflet';
 
 // Sửa lỗi mất icon mặc định của Leaflet (Áp dụng toàn cục)
@@ -80,7 +81,6 @@ const AuthPage = ({ onLoginSuccess }) => {
             <label className="block text-gray-400 text-sm mb-1 font-bold">Mật Khẩu</label>
             <div className="relative">
               <input 
-                // ĐÃ FIX: Đổi type dựa trên state showPassword
                 type={showPassword ? "text" : "password"} 
                 required 
                 value={formData.password} 
@@ -88,7 +88,6 @@ const AuthPage = ({ onLoginSuccess }) => {
                 className="w-full bg-[#161B22] border border-gray-700 text-white rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-[#00E5FF] transition-colors" 
                 placeholder="••••••••" 
               />
-              {/* NÚT CON MẮT */}
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)} 
@@ -202,7 +201,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#0E1117] text-white font-sans pb-10">
+      <div className="min-h-screen bg-[#0E1117] text-white font-sans pb-10 relative">
         <header className="pt-8 pb-4">
           <h1 className="text-3xl font-extrabold text-center text-cyan-400 drop-shadow-[0_0_10px_rgba(0,229,255,0.5)]">
             🚦 TRUNG TÂM ĐIỀU HÀNH ITS TP.HCM
@@ -214,15 +213,18 @@ function App() {
 
         <NavigationTabs currentUser={currentUser} onLogout={handleLogout} />
 
-        <main className="px-6">
+        <main className="px-6 relative z-10">
           <Routes>
             <Route path="/" element={<MonitorTab />} />
             <Route path="/map" element={<TomtomTab />} />
             <Route path="/analytics" element={<AnalyticsTab />} />
-            {/* BỔ SUNG 3: Thêm Route bảo mật cho trang Admin */}
             <Route path="/admin" element={currentUser === 'Super Admin' ? <AdminTab /> : <div className="p-10 text-center text-red-500 font-bold">⛔ Bạn không có quyền truy cập trang này.</div>} />
           </Routes>
         </main>
+
+        {/* BỔ SUNG 2: Đặt Widget Chatbot ở đây để nó tự do "nổi" lên trên toàn bộ trang */}
+        <ChatbotWidget />
+        
       </div>
     </Router>
   );

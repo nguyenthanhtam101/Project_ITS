@@ -437,3 +437,42 @@ def sync_table(table_name: str, data: List[Dict[str, Any]]):
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
+import google.generativeai as genai
+
+# CẤU HÌNH GEMINI API
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+class ChatMessage(BaseModel):
+    message: str
+
+@app.post("/api/chat")
+def chat_with_assistant(req: ChatMessage):
+    global TOMTOM_CACHE
+    try:
+        # 1. Đóng gói dữ liệu giao thông thực tế thành Văn bản để Gemini đọc
+        traffic_context = "DỮ LIỆU GIAO THÔNG THỜI GIAN THỰC TẠI TP.HCM:\n"
+        if not TOMTOM_CACHE:
+            traffic_context += "Hệ thống đang cập nhật dữ liệu từ cảm biến..."
+        else:
+            for item in TOMTOM_CACHE:
+                traffic_context += f"- Nút giao {item['node_name']} ({item['district']}): Tình trạng {item['status']}, vận tốc {item['curr_speed']}/{item['free_speed']} km/h.\n"
+
+        # 2. Tạo System Prompt (Nhập vai cho Bot)
+        system_prompt = f"""Bạn là Trợ lý ảo Giao thông Thông minh (ITS) của TP.HCM.
+Bạn chỉ trả lời các thông tin liên quan đến giao thông, thời tiết và định tuyến.
+Tuyệt đối tuân thủ dữ liệu thực tế sau đây để trả lời người dùng (không tự bịa dữ liệu):
+{traffic_context}
+Cách trả lời: Ngắn gọn, súc tích, thân thiện, dùng biểu tượng cảm xúc phù hợp. Nếu người dùng hỏi khu vực không có trong dữ liệu, hãy báo là "Hệ thống chưa lắp đặt camera giám sát tại khu vực này"."""
+
+        # 3. Khởi tạo mô hình và gọi Gemini
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Trộn System Prompt và câu hỏi của người dùng
+        final_prompt = f"{system_prompt}\n\nNgười dùng hỏi: {req.message}"
+        response = model.generate_content(final_prompt)
+
+        return {"status": "success", "reply": response.text}
+    except Exception as e:
+        return {"status": "error", "message": f"Lỗi kết nối AI: {str(e)}"}
