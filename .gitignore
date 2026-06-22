@@ -9,3 +9,5 @@ backend/__pycache__/
 backend/temp_videos/
 backend/evidence/
 .env
+
+backend/config.py

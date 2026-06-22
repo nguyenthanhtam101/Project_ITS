@@ -19,7 +19,7 @@ const TomtomTab = () => {
   const fetchTraffic = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const res = await axios.get('https://freeware-june-til-reservoir.trycloudflare.com/api/tomtom', {
+      const res = await axios.get('https://podcasts-sticker-pairs-therapist.trycloudflare.com/api/tomtom', {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data && res.data.length > 0) {

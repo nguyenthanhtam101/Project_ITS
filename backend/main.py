@@ -18,7 +18,7 @@ from typing import List, Dict, Any
 import numpy as np
 from sqlalchemy import text
 from core.database import engine
-from config import TOMTOM_API_KEY, TOMTOM_HOTSPOTS,GEMINI_API_KEY
+from config import TOMTOM_API_KEY, TOMTOM_HOTSPOTS,GEMINI_API_KEY, WEATHER_API_KEY
 from core.ai_engine import load_models
 from core.tracker_logic import generate_frames
 
@@ -447,30 +447,69 @@ genai.configure(api_key=GEMINI_API_KEY)
 class ChatMessage(BaseModel):
     message: str
 
+# HÀM LẤY THỜI TIẾT TP.HCM THỜI GIAN THỰC (Sử dụng WeatherAPI cực chuẩn)
+def get_hcm_weather():
+    try:
+        # q=Ho Chi Minh City, lang=vi (trả về tiếng Việt)
+        url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q=Ho Chi Minh City&lang=vi"
+        res = requests.get(url, timeout=5)
+        
+        if res.status_code == 200:
+            data = res.json().get('current', {})
+            temp = data.get('temp_c', '--')
+            humid = data.get('humidity', '--')
+            precip = data.get('precip_mm', 0)
+            
+            # WeatherAPI trả về sẵn text tiếng Việt rất sát thực tế (VD: "Nắng nóng", "Nhiều mây")
+            condition = data.get('condition', {}).get('text', 'Bình thường')
+
+            return f"Nhiệt độ: {temp}°C | Độ ẩm: {humid}% | Lượng mưa: {precip}mm\nTrạng thái: {condition}"
+    except:
+        return "Không thể lấy dữ liệu thời tiết lúc này."
+    return "Lỗi cấu hình API Thời tiết."
+
+
 @app.post("/api/chat")
 def chat_with_assistant(req: ChatMessage):
     global TOMTOM_CACHE
     try:
-        # 1. Đóng gói dữ liệu giao thông thực tế thành Văn bản để Gemini đọc
-        traffic_context = "DỮ LIỆU GIAO THÔNG THỜI GIAN THỰC TẠI TP.HCM:\n"
+        # Lấy dữ liệu thời tiết
+        weather_info = get_hcm_weather()
+
+        # Đóng gói dữ liệu giao thông
+        traffic_context = "DỮ LIỆU GIAO THÔNG LIVE (Lấy trực tiếp từ Database & TomTom):\n"
         if not TOMTOM_CACHE:
-            traffic_context += "Hệ thống đang cập nhật dữ liệu từ cảm biến..."
+            traffic_context += "Hệ thống đang cập nhật dữ liệu từ cảm biến...\n"
         else:
             for item in TOMTOM_CACHE:
-                traffic_context += f"- Nút giao {item['node_name']} ({item['district']}): Tình trạng {item['status']}, vận tốc {item['curr_speed']}/{item['free_speed']} km/h.\n"
+                traffic_context += f"- Nút giao {item['node_name']} (Khu vực: {item['district']}): Tình trạng {item['status']}, vận tốc {item['curr_speed']}/{item['free_speed']} km/h, mức ùn tắc {item['cong_pct']}%.\n"
 
-        # 2. Tạo System Prompt (Nhập vai cho Bot)
-        system_prompt = f"""Bạn là Trợ lý ảo Giao thông Thông minh (ITS) của TP.HCM.
-Bạn chỉ trả lời các thông tin liên quan đến giao thông, thời tiết và định tuyến.
-Tuyệt đối tuân thủ dữ liệu thực tế sau đây để trả lời người dùng (không tự bịa dữ liệu):
+        # In kiểm chứng ra Terminal
+        print("\n=== DỮ LIỆU ĐANG BƠM VÀO NÃO AI ===")
+        print(weather_info)
+        print(traffic_context)
+        print("=====================================\n")
+
+        # Tạo System Prompt gò AI vào nề nếp
+        system_prompt = f"""Bạn là Trợ lý ảo Giao thông (ITS) của TP.HCM.
+Dưới đây là DỮ LIỆU THỜI TIẾT TẠI TP.HCM HIỆN TẠI:
+{weather_info}
+
+Dưới đây là DỮ LIỆU GIAO THÔNG LIVE:
 {traffic_context}
-Cách trả lời: Ngắn gọn, súc tích, thân thiện, dùng biểu tượng cảm xúc phù hợp. Nếu người dùng hỏi khu vực không có trong dữ liệu, hãy báo là "Hệ thống chưa lắp đặt camera giám sát tại khu vực này"."""
 
-        # 3. Khởi tạo mô hình và gọi Gemini
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Trộn System Prompt và câu hỏi của người dùng
-        final_prompt = f"{system_prompt}\n\nNgười dùng hỏi: {req.message}"
+NGUYÊN TẮC TRẢ LỜI (BẮT BUỘC TUÂN THỦ 100%):
+1. ĐÚNG TRỌNG TÂM CÂU HỎI: Người dùng hỏi gì thì trả lời đúng cái đó. 
+   - Nếu chỉ hỏi thời tiết/mưa nắng -> CHỈ trả lời thời tiết, KHÔNG nói về kẹt xe.
+   - Nếu chỉ hỏi kẹt xe -> CHỈ nói giao thông, KHÔNG nói thời tiết.
+   - Tuyệt đối KHÔNG "học vẹt" liệt kê toàn bộ thông tin nếu không được hỏi.
+2. ÉP BUỘC XUỐNG DÒNG: Mỗi một ý, mỗi một trạm giao thông hoặc một thông số (Nhiệt độ, Lượng mưa) BẮT BUỘC phải nằm trên MỘT DÒNG RIÊNG BIỆT.
+3. Sử dụng gạch đầu dòng (-) hoặc Emoji ở đầu mỗi dòng.
+4. Bôi đậm (**chữ**) những thông số quan trọng."""
+
+        # Khởi tạo mô hình
+        model = genai.GenerativeModel('gemini-3.5-flash')
+        final_prompt = f"{system_prompt}\n\nCâu hỏi: {req.message}"
         response = model.generate_content(final_prompt)
 
         return {"status": "success", "reply": response.text}
