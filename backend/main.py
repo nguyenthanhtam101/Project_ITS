@@ -51,9 +51,15 @@ except Exception as e:
 
 
 # ==============================================================
-# HÀM LOGIC TOÁN HỌC: BẮT NGƯỢC CHIỀU DỰA TRÊN VECTOR (BỔ SUNG)
+# HÀM LOGIC TOÁN HỌC: BẮT NGƯỢC CHIỀU DỰA TRÊN VECTOR 
 # ==============================================================
 def calculate_angle(v_vehicle, v_allowed):
+    # CHỐNG CRASH LUỒNG KPI: Nếu một trong hai Vector bị rỗng, bỏ qua tính toán
+    if not v_allowed or not v_vehicle:
+        return 0
+    if (v_allowed[0] == 0 and v_allowed[1] == 0) or (v_vehicle[0] == 0 and v_vehicle[1] == 0):
+        return 0
+        
     # Tích vô hướng (Dot Product)
     dot_product = v_vehicle[0] * v_allowed[0] + v_vehicle[1] * v_allowed[1]
     
@@ -61,9 +67,6 @@ def calculate_angle(v_vehicle, v_allowed):
     mag_vehicle = math.sqrt(v_vehicle[0]**2 + v_vehicle[1]**2)
     mag_allowed = math.sqrt(v_allowed[0]**2 + v_allowed[1]**2)
     
-    if mag_vehicle == 0 or mag_allowed == 0:
-        return 0
-        
     # Tính góc theta (Cos) và xử lý sai số làm tròn của máy tính
     cos_theta = dot_product / (mag_vehicle * mag_allowed)
     cos_theta = max(-1.0, min(1.0, cos_theta))

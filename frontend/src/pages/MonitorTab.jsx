@@ -28,7 +28,6 @@ const MonitorTab = () => {
   
   const [currentCamPos, setCurrentCamPos] = useState([10.8033, 106.6845]);
 
-  // BỔ SUNG 1: State lưu trạng thái đảo chiều mũi tên
   const [isReversed, setIsReversed] = useState(false);
 
   useEffect(() => {
@@ -155,7 +154,6 @@ const MonitorTab = () => {
     const handleKeyDown = (e) => {
       if (!activeRoiType) return; 
 
-      // BỔ SUNG 2: Phím R để đảo chiều mũi tên bắt ngược chiều
       if ((e.key === 'r' || e.key === 'R') && activeRoiType === 'wrongway') {
         setIsReversed(prev => !prev);
       }
@@ -167,19 +165,25 @@ const MonitorTab = () => {
       }
       if (e.key === 'Enter') {
         if (rois[activeRoiType].length === 4) {
-          // BỔ SUNG 3: Gói Vector Hướng để gửi xuống Backend
+          
           let currentVector = null;
           if (activeRoiType === 'wrongway') {
-            let startX = (rois.wrongway[0].x + rois.wrongway[1].x) / 2;
-            let startY = (rois.wrongway[0].y + rois.wrongway[1].y) / 2;
-            let endX = (rois.wrongway[2].x + rois.wrongway[3].x) / 2;
-            let endY = (rois.wrongway[2].y + rois.wrongway[3].y) / 2;
+            // FIX THỨ TỰ VẼ: Sắp xếp 4 điểm theo trục Y (Từ trên xuống dưới)
+            const sortedPts = [...rois.wrongway].sort((a, b) => a.y - b.y);
+            const topX = (sortedPts[0].x + sortedPts[1].x) / 2;
+            const topY = (sortedPts[0].y + sortedPts[1].y) / 2;
+            const bottomX = (sortedPts[2].x + sortedPts[3].x) / 2;
+            const bottomY = (sortedPts[2].y + sortedPts[3].y) / 2;
+            
+            // Mặc định chạy từ dưới lên trên
+            let startX = bottomX, startY = bottomY;
+            let endX = topX, endY = topY;
             
             if (isReversed) {
-              [startX, endX] = [endX, startX];
-              [startY, endY] = [endY, startY];
+              startX = topX; startY = topY;
+              endX = bottomX; endY = bottomY;
             }
-            // Vector chuẩn = Điểm cuối - Điểm đầu
+            
             currentVector = [endX - startX, endY - startY];
           }
 
@@ -198,7 +202,7 @@ const MonitorTab = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rois, activeRoiType, aiSettings, currentVideoId, isReversed]); // Thêm isReversed vào dependency
+  }, [rois, activeRoiType, aiSettings, currentVideoId, isReversed]); 
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -229,29 +233,31 @@ const MonitorTab = () => {
           ctx.closePath();
           ctx.fill();
 
-          // BỔ SUNG 4: Vẽ trực quan mũi tên đứt khúc chỉ hướng
           if (type === 'wrongway') {
-            let startX = (pts[0].x + pts[1].x) / 2 * canvas.width;
-            let startY = (pts[0].y + pts[1].y) / 2 * canvas.height;
-            let endX = (pts[2].x + pts[3].x) / 2 * canvas.width;
-            let endY = (pts[2].y + pts[3].y) / 2 * canvas.height;
+            // FIX THỨ TỰ VẼ TRÊN MÀN HÌNH CHUẨN
+            const sortedPts = [...pts].sort((a, b) => a.y - b.y);
+            const topX = (sortedPts[0].x + sortedPts[1].x) / 2 * canvas.width;
+            const topY = (sortedPts[0].y + sortedPts[1].y) / 2 * canvas.height;
+            const bottomX = (sortedPts[2].x + sortedPts[3].x) / 2 * canvas.width;
+            const bottomY = (sortedPts[2].y + sortedPts[3].y) / 2 * canvas.height;
+
+            let startX = bottomX, startY = bottomY;
+            let endX = topX, endY = topY;
 
             if (isReversed) {
-              let tempX = startX; startX = endX; endX = tempX;
-              let tempY = startY; startY = endY; endY = tempY;
+              startX = topX; startY = topY;
+              endX = bottomX; endY = bottomY;
             }
 
-            // Vẽ thân mũi tên nét đứt
             ctx.beginPath();
             ctx.moveTo(startX, startY);
             ctx.lineTo(endX, endY);
-            ctx.strokeStyle = '#00FF00'; // Xanh lá nổi bật
+            ctx.strokeStyle = '#00FF00'; 
             ctx.lineWidth = 3;
             ctx.setLineDash([5, 5]);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Vẽ đầu mũi tên
             const angle = Math.atan2(endY - startY, endX - startX);
             ctx.beginPath();
             ctx.moveTo(endX, endY);
@@ -277,7 +283,7 @@ const MonitorTab = () => {
         });
       }
     });
-  }, [rois, streamUrl, activeRoiType, isReversed]); // Thêm isReversed vào dependency vẽ
+  }, [rois, streamUrl, activeRoiType, isReversed]); 
 
   const handleSettingChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -478,7 +484,6 @@ const MonitorTab = () => {
               <span><b className="text-[#00E5FF]">Chuột Trái:</b> Đánh dấu</span>
               <span><b className="text-red-400">Chuột Phải:</b> Xóa 1 điểm</span>
               <span><b className="text-yellow-400">Phím C:</b> Xóa vùng</span>
-              {/* Cập nhật UI hướng dẫn bấm phím R */}
               {activeRoiType === 'wrongway' && <span><b className="text-pink-400">Phím R:</b> Đảo chiều mũi tên</span>}
               <span><b className="text-green-400">Phím Enter:</b> Lưu ROI</span>
             </div>

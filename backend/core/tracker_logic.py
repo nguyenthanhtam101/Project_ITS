@@ -4,6 +4,7 @@ import os
 import csv
 import time
 import re
+import math  # BỔ SUNG: Import thư viện toán học để tính góc
 from datetime import datetime
 from collections import defaultdict
 from config import *
@@ -20,6 +21,21 @@ def order_points(pts):
     rect[1] = pts[np.argmin(diff)]
     rect[3] = pts[np.argmax(diff)]
     return rect
+
+# ==============================================================
+# HÀM LOGIC TOÁN HỌC: TÍNH GÓC VECTOR (ĐƯA THẲNG VÀO ĐÂY ĐỂ TRÁNH LỖI)
+# ==============================================================
+def calculate_angle(v_vehicle, v_allowed):
+    if not v_allowed or not v_vehicle:
+        return 0
+    if (v_allowed[0] == 0 and v_allowed[1] == 0) or (v_vehicle[0] == 0 and v_vehicle[1] == 0):
+        return 0
+    dot_product = v_vehicle[0] * v_allowed[0] + v_vehicle[1] * v_allowed[1]
+    mag_vehicle = math.sqrt(v_vehicle[0]**2 + v_vehicle[1]**2)
+    mag_allowed = math.sqrt(v_allowed[0]**2 + v_allowed[1]**2)
+    cos_theta = dot_product / (mag_vehicle * mag_allowed)
+    cos_theta = max(-1.0, min(1.0, cos_theta))
+    return math.degrees(math.acos(cos_theta))
 
 def get_traffic_light_state(frame, roi):
     if roi == (0, 0, 0, 0): return 'UNKNOWN'
@@ -93,7 +109,14 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                     pts = [[int(pt['x'] * DISPLAY_W), int(pt['y'] * DISPLAY_H)] for pt in ww_pts]
                     src_pts = order_points(np.array(pts, dtype="float32"))
                     ww_polygon = np.array(src_pts, np.int32)
-                    ww_vector = (src_pts[3][0] - src_pts[0][0], src_pts[3][1] - src_pts[0][1])
+                    
+                    # SỬA LỖI Ở ĐÂY: Lấy Vector trực tiếp từ Frontend truyền lên
+                    ww_vec_arr = settings.get("wrongwayVector")
+                    if ww_vec_arr is not None:
+                        # Nhân tỷ lệ màn hình để đồng bộ với tọa độ của xe
+                        ww_vector = (ww_vec_arr[0] * DISPLAY_W, ww_vec_arr[1] * DISPLAY_H)
+                    else:
+                        ww_vector = None
                 else:
                     ww_polygon, ww_vector = None, None
 
@@ -105,7 +128,6 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                 else:
                     rl_monitor_polygon = None
 
-                # KHU VỰC VẼ ĐÈN TÍN HIỆU
                 tl_pts = rois.get("trafficLight", [])
                 if len(tl_pts) == 4:
                     pts = [[int(pt['x'] * DISPLAY_W), int(pt['y'] * DISPLAY_H)] for pt in tl_pts]
@@ -199,21 +221,27 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                                             data['best_frame'] = frame.copy() 
                                             total_violations += 1
 
-                        if run_wrongway and not data['tele_sent'] and not data['is_wrongway_err'] and ww_polygon is not None:
+                        # SỬA LỖI NGƯỢC CHIỀU: Sử dụng góc Vector thay vì Dot Product thủ công
+                        if run_wrongway and not data['tele_sent'] and not data['is_wrongway_err'] and ww_polygon is not None and ww_vector is not None:
                             if cv2.pointPolygonTest(ww_polygon, (center_x, bottom_y), False) >= 0:
-                                if data['ww_state'] == 'WAITING': data['ww_state'], data['ww_start_pt'] = 'TRACKING', (center_x, bottom_y)
+                                if data['ww_state'] == 'WAITING': 
+                                    data['ww_state'], data['ww_start_pt'] = 'TRACKING', (center_x, bottom_y)
                                 elif data['ww_state'] == 'TRACKING':
                                     sx, sy = data['ww_start_pt']
                                     if np.sqrt((center_x - sx) ** 2 + (bottom_y - sy) ** 2) > 60:
                                         v_car = (center_x - sx, bottom_y - sy)
-                                        dot_p = v_car[0] * ww_vector[0] + v_car[1] * ww_vector[1]
-                                        mag_c, mag_r = np.sqrt(v_car[0]**2 + v_car[1]**2), np.sqrt(ww_vector[0]**2 + ww_vector[1]**2)
-                                        if mag_c > 0 and mag_r > 0 and (dot_p / (mag_c * mag_r)) < -0.5:
+                                        
+                                        # GỌI HÀM TÍNH GÓC CHUYÊN DỤNG
+                                        angle_diff = calculate_angle(v_car, ww_vector)
+                                        
+                                        # Góc > 100 độ được xem là đâm ngược đầu xe
+                                        if angle_diff > 100: 
                                             data['pending_tele'], data['is_wrongway_err'] = True, True
                                             data['pending_tele_time'], data['ww_state'] = video_current_time, 'DONE'
                                             data['best_frame'] = frame.copy() 
                                             total_violations += 1
-                                        else: data['ww_start_pt'] = (center_x, bottom_y)
+                                        else: 
+                                            data['ww_start_pt'] = (center_x, bottom_y)
                             else:
                                 if data['ww_state'] == 'TRACKING': data['ww_state'] = 'DONE'
 
@@ -259,20 +287,17 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
 
             if run_speed and speed_polygon is not None: cv2.polylines(frame, [speed_polygon], True, (0, 255, 255), 2)
             
-            # ĐÃ SỬA CHỮA: TÁCH RIÊNG LOGIC HIỂN THỊ CHỮ VÀ VẼ Ô ĐÈN ĐỂ KHÔNG BỊ PHỤ THUỘC VÀO NHAU
             if run_redlight:
                 if rl_monitor_polygon is not None:
                     cv2.polylines(frame, [rl_monitor_polygon], True, (0, 0, 255), 2)
                     cv2.line(frame, tuple(rl_monitor_polygon[2]), tuple(rl_monitor_polygon[3]), (0, 255, 255), 3)
                 
-                # Luôn hiển thị trạng thái đèn
                 light_text = f"Den: {cur_light_s}"
                 text_color = (0, 255, 255) if cur_light_s == 'YELLOW' else ((0, 0, 255) if cur_light_s == 'RED' else ((0, 255, 0) if cur_light_s == 'GREEN' else (255, 255, 255)))
                 (tw, th), _ = cv2.getTextSize(light_text, 0, 0.8, 2)
                 cv2.rectangle(frame, (10, 140 - th - 10), (10 + tw + 10, 140 + 5), (0, 0, 0), -1)
                 cv2.putText(frame, light_text, (15, 140), 0, 0.8, text_color, 2)
                 
-                # Vẽ hộp quanh đèn nếu đã đánh dấu
                 if rl_light_straight_roi != (0, 0, 0, 0):
                     rx, ry, rw, rh = rl_light_straight_roi
                     cv2.rectangle(frame, (rx, ry), (rx+rw, ry+rh), (255, 255, 255), 2)
@@ -404,5 +429,4 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
         print(f"⚠️ Ngắt luồng Video ID: {video_id} - Lỗi: {e}")
         
     finally:
-        # LUÔN LUÔN GIẢI PHÓNG CAMERA KHI DỪNG STREAM
         cap.release()
