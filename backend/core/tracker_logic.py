@@ -88,6 +88,13 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
             allow_car_right = settings.get("allowCarRightTurn", False)
             
             rois = settings.get("rois", {"speed": [], "wrongway": [], "redlight": [], "heatmap": [], "trafficLight": []})
+
+            # ĐÃ FIX: ĐƯA VIỆC ĐỌC VECTOR RA NGOÀI ĐỂ NÓ CẬP NHẬT LIÊN TỤC THEO THỜI GIAN THỰC
+            ww_vec_arr = settings.get("wrongwayVector")
+            if ww_vec_arr is not None:
+                ww_vector = (ww_vec_arr[0] * DISPLAY_W, ww_vec_arr[1] * DISPLAY_H)
+            else:
+                ww_vector = None
             
             if rois != last_rois:
                 last_rois = rois.copy()
@@ -109,16 +116,8 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                     pts = [[int(pt['x'] * DISPLAY_W), int(pt['y'] * DISPLAY_H)] for pt in ww_pts]
                     src_pts = order_points(np.array(pts, dtype="float32"))
                     ww_polygon = np.array(src_pts, np.int32)
-                    
-                    # SỬA LỖI Ở ĐÂY: Lấy Vector trực tiếp từ Frontend truyền lên
-                    ww_vec_arr = settings.get("wrongwayVector")
-                    if ww_vec_arr is not None:
-                        # Nhân tỷ lệ màn hình để đồng bộ với tọa độ của xe
-                        ww_vector = (ww_vec_arr[0] * DISPLAY_W, ww_vec_arr[1] * DISPLAY_H)
-                    else:
-                        ww_vector = None
                 else:
-                    ww_polygon, ww_vector = None, None
+                    ww_polygon = None
 
                 rl_pts = rois.get("redlight", [])
                 if len(rl_pts) == 4:
@@ -221,7 +220,6 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                                             data['best_frame'] = frame.copy() 
                                             total_violations += 1
 
-                        # SỬA LỖI NGƯỢC CHIỀU: Sử dụng góc Vector thay vì Dot Product thủ công
                         if run_wrongway and not data['tele_sent'] and not data['is_wrongway_err'] and ww_polygon is not None and ww_vector is not None:
                             if cv2.pointPolygonTest(ww_polygon, (center_x, bottom_y), False) >= 0:
                                 if data['ww_state'] == 'WAITING': 
@@ -231,10 +229,8 @@ def generate_frames(tfile_path, video_id, active_sessions, active_stats, model, 
                                     if np.sqrt((center_x - sx) ** 2 + (bottom_y - sy) ** 2) > 60:
                                         v_car = (center_x - sx, bottom_y - sy)
                                         
-                                        # GỌI HÀM TÍNH GÓC CHUYÊN DỤNG
                                         angle_diff = calculate_angle(v_car, ww_vector)
                                         
-                                        # Góc > 100 độ được xem là đâm ngược đầu xe
                                         if angle_diff > 100: 
                                             data['pending_tele'], data['is_wrongway_err'] = True, True
                                             data['pending_tele_time'], data['ww_state'] = video_current_time, 'DONE'

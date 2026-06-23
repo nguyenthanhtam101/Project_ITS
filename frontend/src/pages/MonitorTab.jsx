@@ -76,6 +76,7 @@ const MonitorTab = () => {
     }
   }, [cctvLocation, sourceType, cctvList]);
 
+  // ĐÃ FIX: Chỉnh thời gian lấy KPI từ 180000ms (3 phút) thành 1000ms (1 giây)
   useEffect(() => {
     let interval;
     if (streamUrl && currentVideoId) {
@@ -90,7 +91,7 @@ const MonitorTab = () => {
         } catch (e) {
           console.error("Lỗi lấy thống kê KPI:", e);
         }
-      }, 180000);
+      }, 1000); 
     } else {
       setKpiStats({ total: '--', violations: '--' });
     }
@@ -168,14 +169,12 @@ const MonitorTab = () => {
           
           let currentVector = null;
           if (activeRoiType === 'wrongway') {
-            // FIX THỨ TỰ VẼ: Sắp xếp 4 điểm theo trục Y (Từ trên xuống dưới)
             const sortedPts = [...rois.wrongway].sort((a, b) => a.y - b.y);
             const topX = (sortedPts[0].x + sortedPts[1].x) / 2;
             const topY = (sortedPts[0].y + sortedPts[1].y) / 2;
             const bottomX = (sortedPts[2].x + sortedPts[3].x) / 2;
             const bottomY = (sortedPts[2].y + sortedPts[3].y) / 2;
             
-            // Mặc định chạy từ dưới lên trên
             let startX = bottomX, startY = bottomY;
             let endX = topX, endY = topY;
             
@@ -234,7 +233,6 @@ const MonitorTab = () => {
           ctx.fill();
 
           if (type === 'wrongway') {
-            // FIX THỨ TỰ VẼ TRÊN MÀN HÌNH CHUẨN
             const sortedPts = [...pts].sort((a, b) => a.y - b.y);
             const topX = (sortedPts[0].x + sortedPts[1].x) / 2 * canvas.width;
             const topY = (sortedPts[0].y + sortedPts[1].y) / 2 * canvas.height;
