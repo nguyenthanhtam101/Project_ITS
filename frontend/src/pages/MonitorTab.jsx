@@ -26,13 +26,14 @@ const MonitorTab = () => {
   const [weather, setWeather] = useState({ temp: '--', wind: '--', humidity: '--', rain: '--' });
   const [kpiStats, setKpiStats] = useState({ total: '--', violations: '--' });
   
-  // ĐÃ FIX 1: Dùng state để lưu tọa độ thay vì fix cứng, mặc định là TP.HCM
   const [currentCamPos, setCurrentCamPos] = useState([10.8033, 106.6845]);
+
+  // BỔ SUNG 1: State lưu trạng thái đảo chiều mũi tên
+  const [isReversed, setIsReversed] = useState(false);
 
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        // Cập nhật thời tiết động theo tọa độ của bản đồ
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentCamPos[0]}&longitude=${currentCamPos[1]}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&hourly=precipitation_probability&timezone=Asia/Bangkok&forecast_days=1`;
         const res = await axios.get(url);
         const data = res.data;
@@ -48,7 +49,7 @@ const MonitorTab = () => {
       }
     };
     fetchWeather();
-  }, [currentCamPos]); // Load lại thời tiết khi đổi tọa độ camera
+  }, [currentCamPos]);
 
   useEffect(() => {
     const fetchCCTV = async () => {
@@ -67,7 +68,6 @@ const MonitorTab = () => {
     fetchCCTV();
   }, []);
 
-  // ĐÃ FIX 2: Tự động cập nhật tọa độ bản đồ khi người dùng chọn Camera từ Dropdown
   useEffect(() => {
     if (sourceType === 'opencctv' && cctvLocation) {
       const selectedCam = cctvList.find(c => c.name === cctvLocation);
@@ -155,6 +155,11 @@ const MonitorTab = () => {
     const handleKeyDown = (e) => {
       if (!activeRoiType) return; 
 
+      // BỔ SUNG 2: Phím R để đảo chiều mũi tên bắt ngược chiều
+      if ((e.key === 'r' || e.key === 'R') && activeRoiType === 'wrongway') {
+        setIsReversed(prev => !prev);
+      }
+
       if (e.key === 'c' || e.key === 'C') {
         const newRois = { ...rois, [activeRoiType]: [] };
         setRois(newRois);
@@ -162,8 +167,30 @@ const MonitorTab = () => {
       }
       if (e.key === 'Enter') {
         if (rois[activeRoiType].length === 4) {
+          // BỔ SUNG 3: Gói Vector Hướng để gửi xuống Backend
+          let currentVector = null;
+          if (activeRoiType === 'wrongway') {
+            let startX = (rois.wrongway[0].x + rois.wrongway[1].x) / 2;
+            let startY = (rois.wrongway[0].y + rois.wrongway[1].y) / 2;
+            let endX = (rois.wrongway[2].x + rois.wrongway[3].x) / 2;
+            let endY = (rois.wrongway[2].y + rois.wrongway[3].y) / 2;
+            
+            if (isReversed) {
+              [startX, endX] = [endX, startX];
+              [startY, endY] = [endY, startY];
+            }
+            // Vector chuẩn = Điểm cuối - Điểm đầu
+            currentVector = [endX - startX, endY - startY];
+          }
+
+          const newSettings = { ...aiSettings };
+          if (currentVector) {
+            newSettings.wrongwayVector = currentVector;
+            setAiSettings(newSettings);
+          }
+
           alert(`✅ Đã lưu vùng ${ROI_COLORS[activeRoiType].name}! AI bắt đầu tính toán.`);
-          sendLiveSettings(aiSettings, rois);
+          sendLiveSettings(newSettings, rois);
         } else {
           alert('⚠️ Bạn phải vẽ đủ 4 điểm cho vùng này trước khi Lưu!');
         }
@@ -171,7 +198,7 @@ const MonitorTab = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rois, activeRoiType, aiSettings, currentVideoId]);
+  }, [rois, activeRoiType, aiSettings, currentVideoId, isReversed]); // Thêm isReversed vào dependency
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -201,6 +228,39 @@ const MonitorTab = () => {
         if (pts.length === 4) {
           ctx.closePath();
           ctx.fill();
+
+          // BỔ SUNG 4: Vẽ trực quan mũi tên đứt khúc chỉ hướng
+          if (type === 'wrongway') {
+            let startX = (pts[0].x + pts[1].x) / 2 * canvas.width;
+            let startY = (pts[0].y + pts[1].y) / 2 * canvas.height;
+            let endX = (pts[2].x + pts[3].x) / 2 * canvas.width;
+            let endY = (pts[2].y + pts[3].y) / 2 * canvas.height;
+
+            if (isReversed) {
+              let tempX = startX; startX = endX; endX = tempX;
+              let tempY = startY; startY = endY; endY = tempY;
+            }
+
+            // Vẽ thân mũi tên nét đứt
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#00FF00'; // Xanh lá nổi bật
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Vẽ đầu mũi tên
+            const angle = Math.atan2(endY - startY, endX - startX);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 15 * Math.cos(angle - Math.PI / 6), endY - 15 * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(endX - 15 * Math.cos(angle + Math.PI / 6), endY - 15 * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(endX, endY);
+            ctx.fillStyle = '#00FF00';
+            ctx.fill();
+          }
         }
         ctx.stroke();
 
@@ -217,7 +277,7 @@ const MonitorTab = () => {
         });
       }
     });
-  }, [rois, streamUrl, activeRoiType]);
+  }, [rois, streamUrl, activeRoiType, isReversed]); // Thêm isReversed vào dependency vẽ
 
   const handleSettingChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -275,7 +335,6 @@ const MonitorTab = () => {
 
       if (resData && resData.video_id) {
         setCurrentVideoId(resData.video_id);
-        // ĐÃ FIX 3: Gắn timestamp vào đuôi URL để chặn trình duyệt Chrome lưu cache làm đen màn hình
         setStreamUrl(`https://bruce-racial-bureau-stopped.trycloudflare.com/api/stream-video/${resData.video_id}?t=${new Date().getTime()}`);
       }
     } catch (error) {
@@ -418,7 +477,9 @@ const MonitorTab = () => {
             <div className="bg-[#1A202C] border border-gray-700 text-xs text-gray-400 px-4 py-2 rounded-lg flex gap-4">
               <span><b className="text-[#00E5FF]">Chuột Trái:</b> Đánh dấu</span>
               <span><b className="text-red-400">Chuột Phải:</b> Xóa 1 điểm</span>
-              <span><b className="text-yellow-400">Phím C:</b> Xóa vùng đang chọn</span>
+              <span><b className="text-yellow-400">Phím C:</b> Xóa vùng</span>
+              {/* Cập nhật UI hướng dẫn bấm phím R */}
+              {activeRoiType === 'wrongway' && <span><b className="text-pink-400">Phím R:</b> Đảo chiều mũi tên</span>}
               <span><b className="text-green-400">Phím Enter:</b> Lưu ROI</span>
             </div>
           </div>
@@ -463,7 +524,6 @@ const MonitorTab = () => {
           <div className="w-full xl:w-2/3 bg-[#11151A] border border-gray-700 rounded-xl p-4 shadow-lg h-[300px] flex flex-col">
             <h3 className="text-md font-bold text-gray-300 mb-2">📍 Bản Đồ Camera Giám Sát</h3>
             <div className="flex-1 rounded-lg overflow-hidden border border-gray-800 relative z-0">
-              {/* ĐÃ FIX 4: Thêm key={currentCamPos} để ép bản đồ tự động dời đến tọa độ mới */}
               <MapContainer key={`${currentCamPos[0]}-${currentCamPos[1]}`} center={currentCamPos} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png" />
                 <Circle center={currentCamPos} pathOptions={{ color: '#00E5FF', fillColor: '#00E5FF', fillOpacity: 0.3 }} radius={150} />

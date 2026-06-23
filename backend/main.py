@@ -3,6 +3,7 @@ import uuid
 import shutil
 import json
 import yt_dlp
+import math # BỔ SUNG: Import thư viện toán học
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -47,6 +48,29 @@ try:
 except Exception as e:
     print(f"⚠️ Lỗi nạp mô hình: {e}")
     model, reader, AI_DEVICE = None, None, 'cpu'
+
+
+# ==============================================================
+# HÀM LOGIC TOÁN HỌC: BẮT NGƯỢC CHIỀU DỰA TRÊN VECTOR (BỔ SUNG)
+# ==============================================================
+def calculate_angle(v_vehicle, v_allowed):
+    # Tích vô hướng (Dot Product)
+    dot_product = v_vehicle[0] * v_allowed[0] + v_vehicle[1] * v_allowed[1]
+    
+    # Độ lớn của từng Vector
+    mag_vehicle = math.sqrt(v_vehicle[0]**2 + v_vehicle[1]**2)
+    mag_allowed = math.sqrt(v_allowed[0]**2 + v_allowed[1]**2)
+    
+    if mag_vehicle == 0 or mag_allowed == 0:
+        return 0
+        
+    # Tính góc theta (Cos) và xử lý sai số làm tròn của máy tính
+    cos_theta = dot_product / (mag_vehicle * mag_allowed)
+    cos_theta = max(-1.0, min(1.0, cos_theta))
+    
+    angle_rad = math.acos(cos_theta)
+    return math.degrees(angle_rad)
+
 
 # ==============================================================
 # HỆ THỐNG API UPLOAD & STREAM VIDEO CHÍNH
@@ -246,7 +270,7 @@ def update_tomtom_data():
         # Cập nhật Cache cho Frontend gọi
         if data_records: TOMTOM_CACHE = data_records
         
-        # Quét 1 phút 1 lần
+        # Quét 10 phút 1 lần
         time.sleep(600) 
 
 # (Đoạn này giữ nguyên)
@@ -469,7 +493,7 @@ def get_hcm_weather():
     return "Lỗi cấu hình API Thời tiết."
 
 
-from datetime import datetime  # Hãy đảm bảo dòng này nằm ở đầu file main.py
+from datetime import datetime  
 
 @app.post("/api/chat")
 def chat_with_assistant(req: ChatMessage):
