@@ -35,7 +35,7 @@ const AuthPage = ({ onLoginSuccess }) => {
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
     
     try {
-      const res = await axios.post(`https://podcasts-sticker-pairs-therapist.trycloudflare.com${endpoint}`, formData);
+      const res = await axios.post(`https://bruce-racial-bureau-stopped.trycloudflare.com${endpoint}`, formData);
       if (res.data.status === 'success') {
         if (isLoginMode) {
           onLoginSuccess(res.data.full_name);

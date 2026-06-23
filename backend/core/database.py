@@ -12,9 +12,9 @@ import hashlib
 # DB_PORT = "5432"          # Cổng Docker đã map ra ngoài
 # DB_NAME = "its_hcm_db"       # Tên Database trong Docker
 
-# DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-DATABASE_URL = "postgresql://postgres:ThanhTamITS2026@db.sytvneuehabkuodbxvto.supabase.co:5432/postgres"
-
+# DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}" docker localhost
+# DATABASE_URL = "postgresql://postgres:ThanhTamITS2026@db.sytvneuehabkuodbxvto.supabase.co:5432/postgres" ipv6
+DATABASE_URL = "postgresql://postgres.sytvneuehabkuodbxvto:ThanhTamITS2026@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"  #ipv4
 try:
     engine = create_engine(DATABASE_URL)
     print("Đã kết nối thành công tới Database PostgreSQL trên Supabase Cloud!")

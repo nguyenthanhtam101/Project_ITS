@@ -247,7 +247,7 @@ def update_tomtom_data():
         if data_records: TOMTOM_CACHE = data_records
         
         # Quét 1 phút 1 lần
-        time.sleep(60) 
+        time.sleep(600) 
 
 # (Đoạn này giữ nguyên)
 threading.Thread(target=update_tomtom_data, daemon=True).start()
@@ -469,14 +469,16 @@ def get_hcm_weather():
     return "Lỗi cấu hình API Thời tiết."
 
 
+from datetime import datetime  # Hãy đảm bảo dòng này nằm ở đầu file main.py
+
 @app.post("/api/chat")
 def chat_with_assistant(req: ChatMessage):
     global TOMTOM_CACHE
     try:
-        # Lấy dữ liệu thời tiết
+        # 1. Lấy dữ liệu thời tiết
         weather_info = get_hcm_weather()
 
-        # Đóng gói dữ liệu giao thông
+        # 2. Đóng gói dữ liệu giao thông
         traffic_context = "DỮ LIỆU GIAO THÔNG LIVE (Lấy trực tiếp từ Database & TomTom):\n"
         if not TOMTOM_CACHE:
             traffic_context += "Hệ thống đang cập nhật dữ liệu từ cảm biến...\n"
@@ -484,14 +486,25 @@ def chat_with_assistant(req: ChatMessage):
             for item in TOMTOM_CACHE:
                 traffic_context += f"- Nút giao {item['node_name']} (Khu vực: {item['district']}): Tình trạng {item['status']}, vận tốc {item['curr_speed']}/{item['free_speed']} km/h, mức ùn tắc {item['cong_pct']}%.\n"
 
+        # ==========================================
+        # 3. TẠO ĐỒNG HỒ THỜI GIAN THỰC CHO AI (BỔ SUNG)
+        # ==========================================
+        now = datetime.now()
+        days_vn = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+        current_time_str = f"{days_vn[now.weekday()]}, ngày {now.strftime('%d/%m/%Y %H:%M:%S')}"
+
         # In kiểm chứng ra Terminal
         print("\n=== DỮ LIỆU ĐANG BƠM VÀO NÃO AI ===")
+        print(f"THỜI GIAN: {current_time_str}")
         print(weather_info)
         print(traffic_context)
         print("=====================================\n")
 
-        # Tạo System Prompt gò AI vào nề nếp
+        # 4. Tạo System Prompt gò AI vào nề nếp (Bổ sung biến thời gian)
         system_prompt = f"""Bạn là Trợ lý ảo Giao thông (ITS) của TP.HCM.
+
+THỜI GIAN HIỆN TẠI CỦA HỆ THỐNG: {current_time_str}
+
 Dưới đây là DỮ LIỆU THỜI TIẾT TẠI TP.HCM HIỆN TẠI:
 {weather_info}
 
@@ -500,6 +513,7 @@ Dưới đây là DỮ LIỆU GIAO THÔNG LIVE:
 
 NGUYÊN TẮC TRẢ LỜI (BẮT BUỘC TUÂN THỦ 100%):
 1. ĐÚNG TRỌNG TÂM CÂU HỎI: Người dùng hỏi gì thì trả lời đúng cái đó. 
+   - Nếu hỏi thứ, ngày, tháng, năm, giờ -> BẮT BUỘC trả lời chính xác dựa vào mốc [THỜI GIAN HIỆN TẠI CỦA HỆ THỐNG] ở trên, tuyệt đối không tự bịa.
    - Nếu chỉ hỏi thời tiết/mưa nắng -> CHỈ trả lời thời tiết, KHÔNG nói về kẹt xe.
    - Nếu chỉ hỏi kẹt xe -> CHỈ nói giao thông, KHÔNG nói thời tiết.
    - Tuyệt đối KHÔNG "học vẹt" liệt kê toàn bộ thông tin nếu không được hỏi.
@@ -507,7 +521,7 @@ NGUYÊN TẮC TRẢ LỜI (BẮT BUỘC TUÂN THỦ 100%):
 3. Sử dụng gạch đầu dòng (-) hoặc Emoji ở đầu mỗi dòng.
 4. Bôi đậm (**chữ**) những thông số quan trọng."""
 
-        # Khởi tạo mô hình
+        # 5. Khởi tạo mô hình
         model = genai.GenerativeModel('gemini-3.5-flash')
         final_prompt = f"{system_prompt}\n\nCâu hỏi: {req.message}"
         response = model.generate_content(final_prompt)
