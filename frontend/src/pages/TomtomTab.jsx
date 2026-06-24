@@ -19,7 +19,7 @@ const TomtomTab = () => {
   const fetchTraffic = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const res = await axios.get('https://bruce-racial-bureau-stopped.trycloudflare.com/api/tomtom', {
+      const res = await axios.get('https://cal-manufacturer-corporations-renaissance.trycloudflare.com/api/tomtom', {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.data && res.data.length > 0) {
