@@ -35,7 +35,7 @@ const AuthPage = ({ onLoginSuccess }) => {
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
     
     try {
-      const res = await axios.post(`https://cal-manufacturer-corporations-renaissance.trycloudflare.com${endpoint}`, formData);
+      const res = await axios.post(`https://partners-pads-alive-potential.trycloudflare.com${endpoint}`, formData);
       if (res.data.status === 'success') {
         if (isLoginMode) {
           onLoginSuccess(res.data.full_name);
