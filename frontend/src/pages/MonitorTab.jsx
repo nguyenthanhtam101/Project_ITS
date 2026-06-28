@@ -53,7 +53,7 @@ const MonitorTab = () => {
   useEffect(() => {
     const fetchCCTV = async () => {
       try {
-        const res = await axios.get('https://partners-pads-alive-potential.trycloudflare.com/api/admin/table/cameras', {
+        const res = await axios.get('https://dear-drums-lower-victoria.trycloudflare.com/api/admin/table/cameras', {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
         setCctvList(res.data);
@@ -82,7 +82,7 @@ const MonitorTab = () => {
     if (streamUrl && currentVideoId) {
       interval = setInterval(async () => {
         try {
-          const res = await axios.get(`https://partners-pads-alive-potential.trycloudflare.com/api/stats/${currentVideoId}`, {
+          const res = await axios.get(`https://dear-drums-lower-victoria.trycloudflare.com/api/stats/${currentVideoId}`, {
             headers: { "ngrok-skip-browser-warning": "true" }
           });
           if (res.data) {
@@ -115,7 +115,7 @@ const MonitorTab = () => {
     const formData = new FormData();
     formData.append('settings', JSON.stringify(finalSettings));
     try {
-      await axios.post(`https://partners-pads-alive-potential.trycloudflare.com/api/update-settings/${currentVideoId}`, formData, {
+      await axios.post(`https://dear-drums-lower-victoria.trycloudflare.com/api/update-settings/${currentVideoId}`, formData, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
     } catch (e) { console.error("Lỗi cập nhật cấu hình live", e); }
@@ -306,14 +306,14 @@ const MonitorTab = () => {
       let resData = null;
       if (sourceType === 'offline' && selectedFile) {
         formData.append('file', selectedFile);
-        const response = await axios.post('https://partners-pads-alive-potential.trycloudflare.com/api/upload-video', formData, {
+        const response = await axios.post('https://dear-drums-lower-victoria.trycloudflare.com/api/upload-video', formData, {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
         resData = response.data;
       } 
       else if (sourceType === 'youtube' && youtubeUrl) {
         formData.append('url', youtubeUrl);
-        const response = await axios.post('https://partners-pads-alive-potential.trycloudflare.com/api/upload-youtube', formData, {
+        const response = await axios.post('https://dear-drums-lower-victoria.trycloudflare.com/api/upload-youtube', formData, {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
         if(response.data.error) {
@@ -324,7 +324,7 @@ const MonitorTab = () => {
       } 
       else if (sourceType === 'opencctv' && cctvLocation) {
         formData.append('camera_name', cctvLocation);
-        const response = await axios.post('https://partners-pads-alive-potential.trycloudflare.com/api/upload-cctv', formData, {
+        const response = await axios.post('https://dear-drums-lower-victoria.trycloudflare.com/api/upload-cctv', formData, {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
         if(response.data.error) {
@@ -339,7 +339,7 @@ const MonitorTab = () => {
 
       if (resData && resData.video_id) {
         setCurrentVideoId(resData.video_id);
-        setStreamUrl(`https://partners-pads-alive-potential.trycloudflare.com/api/stream-video/${resData.video_id}?t=${new Date().getTime()}`);
+        setStreamUrl(`https://dear-drums-lower-victoria.trycloudflare.com/api/stream-video/${resData.video_id}?t=${new Date().getTime()}`);
       }
     } catch (error) {
       alert("❌ Không thể kết nối tới Backend!");

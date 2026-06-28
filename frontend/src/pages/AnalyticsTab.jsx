@@ -21,7 +21,7 @@ const AnalyticsTab = () => {
 
   // Lấy danh sách Camera từ DB khi mở trang
   useEffect(() => {
-    axios.get('https://partners-pads-alive-potential.trycloudflare.com/api/cameras')
+    axios.get('https://dear-drums-lower-victoria.trycloudflare.com/api/cameras')
       .then(res => setCameras(res.data))
       .catch(() => setCameras(["Tất cả các trạm"]));
   }, []);
@@ -29,7 +29,7 @@ const AnalyticsTab = () => {
   const handleFetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.post('https://partners-pads-alive-potential.trycloudflare.com/api/analytics', {
+      const res = await axios.post('https://dear-drums-lower-victoria.trycloudflare.com/api/analytics', {
         start_date: startDate,
         end_date: endDate,
         camera: selectedCam
@@ -56,7 +56,7 @@ const AnalyticsTab = () => {
   // Hàm trigger tải file từ Backend
   const handleExportFile = async (formatType) => {
     try {
-      const response = await axios.post(`https://partners-pads-alive-potential.trycloudflare.com/api/analytics/export/${formatType}`, {
+      const response = await axios.post(`https://dear-drums-lower-victoria.trycloudflare.com/api/analytics/export/${formatType}`, {
         start_date: startDate,
         end_date: endDate,
         camera: selectedCam
@@ -164,7 +164,7 @@ const AnalyticsTab = () => {
                 <div className="w-full md:w-2/3 bg-black border border-gray-700 rounded-lg flex items-center justify-center overflow-hidden min-h-[300px]">
                   {/* Trỏ link lấy ảnh trực tiếp từ backend FastAPI */}
                   <img 
-                    src={`https://partners-pads-alive-potential.trycloudflare.com/evidence/violation_${data.evidence_list[selectedEvidenceIdx]['ID Xe']}.jpg`} 
+                    src={`https://dear-drums-lower-victoria.trycloudflare.com/evidence/violation_${data.evidence_list[selectedEvidenceIdx]['ID Xe']}.jpg`} 
                     alt="Bằng chứng vi phạm" 
                     className="max-w-full max-h-[400px] object-contain"
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
