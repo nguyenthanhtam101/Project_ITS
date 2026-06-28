@@ -62,13 +62,12 @@ Node.js 18+ & npm
 
 GPU NVIDIA (Khuyến nghị để chạy YOLO mượt mà).
 
-Bước 1: Thiết lập Backend (AI Core)
-Bash
+# Bước 1: Thiết lập Backend (AI Core)
 cd backend
 python -m venv venv
-# Kích hoạt môi trường ảo:
-# Windows: .\venv\Scripts\activate
-# Linux/Mac: source venv/bin/activate
+Kích hoạt môi trường ảo:
+Windows: .\venv\Scripts\activate
+Linux/Mac: source venv/bin/activate
 
 pip install -r requirements.txt
 Tạo file .env trong thư mục backend và khai báo các khóa API:
@@ -80,8 +79,7 @@ TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
 TOMTOM_API_KEY=your_tomtom_key
 GEMINI_API_KEY=your_gemini_key
-Bước 2: Thiết lập Frontend (Dashboard)
-Bash
+# Bước 2: Thiết lập Frontend (Dashboard)
 cd frontend
 npm install
 Tạo file .env trong thư mục frontend:
@@ -92,19 +90,16 @@ Bước 3: Khởi chạy hệ thống
 1. Mở đường hầm Cloudflare Tunnel:
 Chạy file thực thi để mở kết nối bảo mật nội bộ ra Internet.
 
-Bash
 cloudflared.exe tunnel --url http://localhost:8000
 2. Khởi động Backend:
 
-Bash
 cd backend
 uvicorn main:app --reload
 3. Khởi động Frontend:
 
-Bash
 cd frontend
 npm run dev
-👨‍💻 Tác giả
+#👨‍💻 Tác giả
 Nguyễn Thành Tâm
 
 Đại học: Phân hiệu Trường Đại học Thủy Lợi (Cơ sở TP.HCM).
