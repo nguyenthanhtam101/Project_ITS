@@ -72,7 +72,7 @@ Linux/Mac: source venv/bin/activate
 pip install -r requirements.txt
 Tạo file .env trong thư mục backend và khai báo các khóa API:
 
-Đoạn mã
+## Đoạn mã
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 TELEGRAM_BOT_TOKEN=your_bot_token
@@ -82,6 +82,7 @@ GEMINI_API_KEY=your_gemini_key
 # Bước 2: Thiết lập Frontend (Dashboard)
 cd frontend
 npm install
+
 Tạo file .env trong thư mục frontend:
 
 VITE_API_BASE_URL=https://<your-cloudflare-tunnel-url>
