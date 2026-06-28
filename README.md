@@ -84,9 +84,8 @@ cd frontend
 npm install
 Tạo file .env trong thư mục frontend:
 
-Đoạn mã
 VITE_API_BASE_URL=https://<your-cloudflare-tunnel-url>
-Bước 3: Khởi chạy hệ thống
+# Bước 3: Khởi chạy hệ thống
 1. Mở đường hầm Cloudflare Tunnel:
 Chạy file thực thi để mở kết nối bảo mật nội bộ ra Internet.
 
@@ -99,7 +98,7 @@ uvicorn main:app --reload
 
 cd frontend
 npm run dev
-#👨‍💻 Tác giả
+# 👨‍💻 Tác giả
 Nguyễn Thành Tâm
 
 Đại học: Phân hiệu Trường Đại học Thủy Lợi (Cơ sở TP.HCM).
