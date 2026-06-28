@@ -86,7 +86,7 @@ npm install
 Tạo file .env trong thư mục frontend:  
 
 VITE_API_BASE_URL=https://<your-cloudflare-tunnel-url>   
-# Bước 3: Khởi chạy hệ thống   
+# Bước 3: Khởi chạy hệ thống  
 1. Mở đường hầm Cloudflare Tunnel:    
 Chạy file thực thi để mở kết nối bảo mật nội bộ ra Internet.   
 
